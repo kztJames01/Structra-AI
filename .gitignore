@@ -1,0 +1,13 @@
+Documents/
+target/
+.idea/
+*.iml
+__pycache__/
+*.pyc
+.venv/
+.cursor/
+.terraform/
+.vscode/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl

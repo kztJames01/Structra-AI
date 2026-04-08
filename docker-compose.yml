@@ -1,0 +1,98 @@
+# run: docker compose up -d
+# heavy stuff stays in containers (set limits so your mac breathes)
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: structra-timescaledb
+    environment:
+      POSTGRES_USER: structra
+      POSTGRES_PASSWORD: structra_dev_change_me
+      POSTGRES_DB: structra
+    ports:
+      - "5432:5432"
+    volumes:
+      - structra_tsdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U structra -d structra"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 768M
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: structra-prometheus
+    profiles: ["observability"]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 384M
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: structra-grafana
+    profiles: ["observability"]
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin_dev_change_me
+      GF_USERS_DEFAULT_THEME: dark
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 384M
+
+  # docker compose --profile app up -d  (runs java+python in docker, not on mac)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: structra-backend
+    profiles: ["app"]
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://timescaledb:5432/structra
+      SPRING_DATASOURCE_USERNAME: structra
+      SPRING_DATASOURCE_PASSWORD: structra_dev_change_me
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  ai-inference:
+    build:
+      context: ./services/ai-inference
+      dockerfile: Dockerfile
+    container_name: structra-ai
+    profiles: ["app"]
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+volumes:
+  structra_tsdata:

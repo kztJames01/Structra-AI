@@ -1,0 +1,41 @@
+{
+  "name": "Structra AI (cloud-friendly)",
+  "image": "mcr.microsoft.com/devcontainers/java:21-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+      "moby": true
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    },
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "1.9.8",
+      "tflint": "latest",
+      "terragrunt": "none"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "ms-python.python",
+        "hashicorp.terraform"
+      ]
+    }
+  },
+  "forwardPorts": [5432, 8080, 8000, 9090, 3000],
+  "portsAttributes": {
+    "5432": { "label": "TimescaleDB" },
+    "8080": { "label": "Spring Boot" },
+    "8000": { "label": "FastAPI AI" },
+    "9090": { "label": "Prometheus" },
+    "3000": { "label": "Grafana" }
+  },
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y maven && docker compose pull || true",
+  "remoteEnv": {
+    "SPRING_DATASOURCE_URL": "jdbc:postgresql://host.docker.internal:5432/structra",
+    "SPRING_DATASOURCE_USERNAME": "structra",
+    "SPRING_DATASOURCE_PASSWORD": "structra_dev_change_me"
+  }
+}
