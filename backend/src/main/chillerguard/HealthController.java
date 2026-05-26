@@ -1,4 +1,4 @@
-package ai.structra.chillerguard;
+package chillerguard;
 
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
